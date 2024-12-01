@@ -1,0 +1,40 @@
+name: rumah_nugas
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Menambahkan dependensi cached_network_image
+  cached_network_image: ^3.2.0
+  intl: ^0.18.0
+  shared_preferences: ^2.1.0
+  image_picker: ^0.8.7+3
+
+  # Menambahkan dependensi cupertino_icons
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Menambahkan bagian assets jika Anda memiliki assets seperti gambar
+  # assets:
+  #   - images/a_dot_burr.jpeg
+  #   - images/a_dot_ham.jpeg
