@@ -1,91 +1,77 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Mengimpor package intl
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class OwnerHistoryScreen extends StatefulWidget {
-  const OwnerHistoryScreen({super.key});
+  final int placeId;
+
+  const OwnerHistoryScreen({super.key, required this.placeId});
 
   @override
   _OwnerHistoryScreenState createState() => _OwnerHistoryScreenState();
 }
 
-// Kelas Pesanan untuk mendefinisikan pesanan
-class Pesanan {
-  final String namaCustomer;
-  final DateTime tanggal;
-  final int jumlahKursi;
-  final double harga;
-
-  Pesanan({
-    required this.namaCustomer,
-    required this.tanggal,
-    required this.jumlahKursi,
-    required this.harga,
-  });
-}
-
 class _OwnerHistoryScreenState extends State<OwnerHistoryScreen> {
-  // Daftar pesanan
-  final listPesanan = [
-    Pesanan(
-      namaCustomer: 'Nama Customer 1',
-      tanggal: DateTime.parse('2024-11-18'),
-      jumlahKursi: 1,
-      harga: 50000,
-    ),
-    Pesanan(
-      namaCustomer: 'Nama Customer 2',
-      tanggal: DateTime.parse('2024-11-18'),
-      jumlahKursi: 2,
-      harga: 30000,
-    ),
-  ];
+  List<Map<String, dynamic>> bookings = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchBookings();
+  }
+
+  Future<void> _fetchBookings() async {
+    final response = await http.get(Uri.parse('http://localhost/rumah-nugas-backend-fix/api/bookings.php?place_id=${widget.placeId}'));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body)['records'];
+      setState(() {
+        bookings = data.map((booking) {
+          return {
+            'userName': booking['user_name'],
+            'date': booking['booking_date'],
+            'numberOfPeople': booking['number_of_people'].toString(),
+            'price': booking['total_price'].toString(),
+            'status': booking['status'],
+            'paymentProof': booking['payment_proof'],
+          };
+        }).toList();
+      });
+    } else {
+      throw Exception('Failed to load bookings');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Format tanggal yang lebih rapi
-    var dateFormat = DateFormat('dd MMMM yyyy'); // Format: 18 November 2024
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Riwayat Pesanan'),
       ),
-      body: ListView.builder(
-        itemCount: listPesanan.length,
-        itemBuilder: (context, index) {
-          final pesanan = listPesanan[index];
-
-          return Card(
-            margin: const EdgeInsets.all(10),
-            elevation: 5,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Nama Customer: ${pesanan.namaCustomer}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+      body: bookings.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: bookings.length,
+              itemBuilder: (context, index) {
+                final booking = bookings[index];
+                return Card(
+                  margin: const EdgeInsets.all(10),
+                  child: ListTile(
+                    title: Text('Nama Customer: ${booking['userName']}'),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Tanggal: ${booking['date']}'),
+                        Text('Jumlah Orang: ${booking['numberOfPeople']}'),
+                        Text('Harga: Rp ${booking['price']}'),
+                        Text('Status: ${booking['status']}'),
+                        Text('Bukti Pembayaran: ${booking['paymentProof']}'),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 5),
-                  Text('Tanggal: ${dateFormat.format(pesanan.tanggal)}'),
-                  Text('Jumlah Kursi: ${pesanan.jumlahKursi}'),
-                  Text('Harga: Rp. ${pesanan.harga.toStringAsFixed(2)}'),
-                  const Divider(),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
-      ),
     );
   }
-}
-
-void main() {
-  runApp(MaterialApp(
-    home: OwnerHistoryScreen(), // Menjalankan layar OwnerHistoryScreen
-  ));
 }

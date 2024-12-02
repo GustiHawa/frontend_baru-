@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'admin_detailpayment_screen.dart' as adminDetailScreen;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -11,7 +10,7 @@ class AdminVerificationScreen extends StatefulWidget {
 }
 
 class _AdminVerificationScreenState extends State<AdminVerificationScreen> {
-  List<Pembayaran> pembayaranList = [];
+  List<Map<String, dynamic>> bookings = [];
 
   @override
   void initState() {
@@ -22,170 +21,138 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen> {
   Future<void> _fetchBookings() async {
     final response = await http.get(Uri.parse('http://localhost/rumah-nugas-backend-fix/api/bookings.php'));
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body)['records'];
+    String responseBody = response.body;
+
+    // Attempt to remove HTML tags (this is a very basic example and may not handle all cases)
+    String cleanedResponseBody = responseBody.replaceAll(RegExp(r'<[^>]*>|&nbsp;'), ''); // Remove tags and &nbsp;
+
+    try {
+      Map<String, dynamic> decodedJson = jsonDecode(cleanedResponseBody);
+      final List<dynamic> data = decodedJson['records'];
       setState(() {
-        pembayaranList = data.map<Pembayaran>((booking) {
-          return Pembayaran(
-            nomor: booking['id'],
-            namaCustomer: booking['user_id'].toString(), // Ganti dengan nama user jika tersedia
-            tanggal: booking['booking_date'],
-            jumlahKursi: booking['number_of_people'].toString(),
-            waktu: booking['created_at'],
-            buktiTransfer: booking['payment_proof'],
-          );
+        bookings = data.map((booking) {
+          return {
+            'id': booking['id'],
+            'userId': booking['user_id'],
+            'date': booking['booking_date'],
+            'numberOfPeople': booking['number_of_people'].toString(),
+            'price': booking['total_price'].toString(),
+            'status': booking['status'],
+            'paymentProof': booking['payment_proof'],
+          };
         }).toList();
       });
-    } else {
+    } on FormatException catch (e) {
+      // Handle the error gracefully, perhaps display an error message to the user.
+      print('Error decoding JSON: $e');
+      print('Original Response: $responseBody'); // Helpful for debugging
+      print('Cleaned Response: $cleanedResponseBody');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Gagal mengambil data booking')),
       );
     }
   }
 
+  Future<void> _updateBookingStatus(int bookingId, String status) async {
+    final response = await http.post(
+      Uri.parse('http://localhost/rumah-nugas-backend-fix/api/update_booking_status.php'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'id': bookingId, 'status': status}),
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Booking $status')),
+      );
+      _fetchBookings(); // Refresh bookings after update
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal memperbarui status booking')),
+      );
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      case 'pending':
+      default:
+        return Colors.yellow;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
         title: const Text('Verifikasi Pembayaran'),
       ),
-      body: Padding(
-        padding: EdgeInsets.all(size.width * 0.04),
-        child: ListView.builder(
-          itemCount: pembayaranList.length,
-          itemBuilder: (context, index) {
-            final pembayaran = pembayaranList[index];
-            return _PembayaranItem(
-              pembayaran: pembayaran,
-              onTerima: () {
-                setState(() {
-                  pembayaranList.removeAt(index);
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Booking diterima')),
-                );
-              },
-              onTolak: () {
-                setState(() {
-                  pembayaranList.removeAt(index);
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Booking ditolak')),
-                );
-              },
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _PembayaranItem extends StatelessWidget {
-  const _PembayaranItem({
-    required this.pembayaran,
-    required this.onTerima,
-    required this.onTolak,
-  });
-
-  final Pembayaran pembayaran;
-  final VoidCallback onTerima;
-  final VoidCallback onTolak;
-
-  @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
-    return Card(
-      elevation: 4.0,
-      margin: EdgeInsets.symmetric(vertical: size.height * 0.01),
-      child: Padding(
-        padding: EdgeInsets.all(size.width * 0.04),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${pembayaran.nomor}. ${pembayaran.namaCustomer}',
-              style: TextStyle(
-                fontSize: size.width * 0.04,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: size.height * 0.01),
-            Text('Tanggal: ${pembayaran.tanggal}'),
-            Text('Jumlah Kursi: ${pembayaran.jumlahKursi}'),
-            Text('Waktu: ${pembayaran.waktu}'),
-            SizedBox(height: size.height * 0.01),
-            const Text(
-              'Bukti Transfer:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: size.height * 0.01),
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => adminDetailScreen.AdminDetailPaymentScreen(
-                      buktiTransfer: pembayaran.buktiTransfer,
+      body: bookings.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: bookings.length,
+              itemBuilder: (context, index) {
+                final booking = bookings[index];
+                return Card(
+                  margin: const EdgeInsets.all(10),
+                  child: ListTile(
+                    title: Text('Booking ID: ${booking['id']}'),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('User ID: ${booking['userId']}'),
+                        Text('Tanggal: ${booking['date']}'),
+                        Text('Jumlah Orang: ${booking['numberOfPeople']}'),
+                        Text('Harga: Rp ${booking['price']}'),
+                        Container(
+                          padding: const EdgeInsets.all(8.0),
+                          color: _getStatusColor(booking['status']),
+                          child: Text('Status: ${booking['status']}'),
+                        ),
+                        booking['paymentProof'].startsWith('http')
+                            ? Image.network(booking['paymentProof'])
+                            : TextButton(
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        content: Image.memory(base64Decode(booking['paymentProof'])),
+                                      );
+                                    },
+                                  );
+                                },
+                                child: const Text('Lihat Bukti Pembayaran'),
+                              ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () => _updateBookingStatus(booking['id'], 'approved'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                              ),
+                              child: const Text('Approve'),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: () => _updateBookingStatus(booking['id'], 'rejected'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                              ),
+                              child: const Text('Reject'),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 );
               },
-              child: const Text(
-                'Lihat Bukti Pembayaran',
-                style: TextStyle(color: Colors.blue),
-              ),
             ),
-            SizedBox(height: size.height * 0.02),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                ElevatedButton(
-                  onPressed: onTerima,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                  ),
-                  child: const Text('Terima'),
-                ),
-                ElevatedButton(
-                  onPressed: onTolak,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                  ),
-                  child: const Text('Tolak'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
-}
-
-class Pembayaran {
-  Pembayaran({
-    required this.nomor,
-    required this.namaCustomer,
-    required this.tanggal,
-    required this.jumlahKursi,
-    required this.waktu,
-    required this.buktiTransfer,
-  });
-
-  final int nomor;
-  final String namaCustomer;
-  final String tanggal;
-  final String jumlahKursi;
-  final String waktu;
-  final String buktiTransfer;
 }

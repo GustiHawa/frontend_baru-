@@ -21,27 +21,59 @@ class _UserHistoryScreenState extends State<UserHistoryScreen> {
 
   Future<void> _fetchBookings() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt('user_id') ?? 0;
+    final userId = prefs.getInt('user_id');
 
-    final response = await http.get(Uri.parse('http://localhost/rumahnugas_db/endpoints/bookings.php?user_id=$userId'));
+    if (userId == null || userId == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User ID tidak valid')),
+      );
+      return;
+    }
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body)['records'];
+    final response = await http.get(Uri.parse('http://localhost/rumah-nugas-backend-fix/api/bookings.php?user_id=$userId'));
+
+    String responseBody = response.body;
+
+    // Attempt to remove HTML tags (this is a very basic example and may not handle all cases)
+    String cleanedResponseBody = responseBody.replaceAll(RegExp(r'<[^>]*>|&nbsp;'), ''); // Remove tags and &nbsp;
+
+    try {
+      Map<String, dynamic> decodedJson = jsonDecode(cleanedResponseBody);
+      final List<dynamic> data = decodedJson['records'];
       setState(() {
         bookings = data.map((booking) {
           return {
-            'imageUrl': 'https://via.placeholder.com/150', // Ganti dengan URL gambar yang sesuai
-            'placeName': booking['place_name'],
-            'date': booking['booking_date'],
-            'address': booking['address'],
+            'id': booking['id'],
+            'placeName': booking['place_name'] ?? 'Unknown Place',
+            'date': booking['booking_date'] ?? 'Unknown Date',
+            'address': booking['address'] ?? 'Unknown Address',
             'numberOfPeople': booking['number_of_people'].toString(),
             'price': booking['total_price'].toString(),
-            'status': booking['status'],
+            'status': booking['status'] ?? 'Unknown Status',
+            'photo': booking['photo'] ?? '',
           };
         }).toList();
       });
-    } else {
-      throw Exception('Failed to load bookings');
+    } on FormatException catch (e) {
+      // Handle the error gracefully, perhaps display an error message to the user.
+      print('Error decoding JSON: $e');
+      print('Original Response: $responseBody'); // Helpful for debugging
+      print('Cleaned Response: $cleanedResponseBody');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal mengambil data booking')),
+      );
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      case 'pending':
+      default:
+        return Colors.yellow;
     }
   }
 
@@ -61,7 +93,9 @@ class _UserHistoryScreenState extends State<UserHistoryScreen> {
                 return Card(
                   margin: const EdgeInsets.all(10),
                   child: ListTile(
-                    leading: Image.network(booking['imageUrl']),
+                    leading: booking['photo'].isNotEmpty
+                        ? Image.network(booking['photo'])
+                        : null,
                     title: Text(booking['placeName']),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,7 +104,11 @@ class _UserHistoryScreenState extends State<UserHistoryScreen> {
                         Text('Alamat: ${booking['address']}'),
                         Text('Jumlah Orang: ${booking['numberOfPeople']}'),
                         Text('Harga: Rp ${booking['price']}'),
-                        Text('Status: ${booking['status']}'),
+                        Container(
+                          padding: const EdgeInsets.all(8.0),
+                          color: _getStatusColor(booking['status']),
+                          child: Text('Status: ${booking['status']}'),
+                        ),
                       ],
                     ),
                   ),

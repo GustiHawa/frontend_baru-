@@ -54,6 +54,15 @@ class _UserDetailCafeScreenState extends State<UserDetailCafeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Detail Cafe'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
       backgroundColor: const Color(0xFFF9F9F9),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _cafeDetail,

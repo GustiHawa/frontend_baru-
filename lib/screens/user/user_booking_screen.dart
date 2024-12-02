@@ -89,21 +89,35 @@ class _UserBookingScreenState extends State<UserBookingScreen> {
       }
 
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt('user_id') ?? 0;
+      final userId = prefs.getInt('user_id');
+
+      if (userId == null || userId == 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User ID tidak valid')),
+        );
+        return;
+      }
+
+      final bookingData = {
+        'user_id': userId,
+        'place_id': widget.placeId,
+        'booking_date': _dateController.text,
+        'number_of_people': _numberOfPeople,
+        'status_id': 1, // Assuming 1 is for 'Pending'
+        'total_price': _numberOfPeople * pricePerPerson,
+        'payment_proof': base64Encode(_buktiTransfer!),
+      };
+
+      print('Booking Data: $bookingData'); // Logging data yang dikirim
 
       final response = await http.post(
         Uri.parse('http://localhost/rumah-nugas-backend-fix/api/bookings.php'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'user_id': userId,
-          'place_id': widget.placeId,
-          'booking_date': _dateController.text,
-          'number_of_people': _numberOfPeople,
-          'status_id': 1, // Assuming 1 is for 'Pending'
-          'total_price': _numberOfPeople * pricePerPerson,
-          'payment_proof': base64Encode(_buktiTransfer!),
-        }),
+        body: json.encode(bookingData),
       );
+
+      print('Response status: ${response.statusCode}'); // Logging status respons
+      print('Response body: ${response.body}'); // Logging body respons
 
       if (response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(

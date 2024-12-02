@@ -4,6 +4,7 @@ import 'package:rumah_nugas/screens/welcome_screen.dart';
 import 'owner_manage_store_screen.dart'; // Pastikan file ini sudah ada
 import 'owner_history_screen.dart'; // Pastikan file ini sudah ada
 import 'owner_balance_report_screen.dart'; // Pastikan file ini sudah ada
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OwnerHomeScreen extends StatefulWidget {
   const OwnerHomeScreen({super.key});
@@ -13,6 +14,21 @@ class OwnerHomeScreen extends StatefulWidget {
 }
 
 class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
+  int placeId = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPlaceId();
+  }
+
+  Future<void> _loadPlaceId() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      placeId = prefs.getInt('place_id') ?? 0;
+    });
+  }
+
   // Fungsi untuk logout
   void _logout() {
     // Navigasi langsung ke halaman choice login setelah logout
@@ -38,13 +54,9 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
   Widget build(BuildContext context) {
     // Daftar menu yang akan ditampilkan
     final menuItems = [
-
-      _MenuItem(Icons.grid_view, 'Kelola',
-          const OwnerManageStoreScreen()), // Diperbarui
-      _MenuItem(Icons.receipt_long, 'Riwayat Pesanan',
-          const OwnerHistoryScreen()), // Diperbarui
-      _MenuItem(
-          Icons.money, 'Laporan Keuangan', OwnerBalanceReportScreen()),
+      _MenuItem(Icons.grid_view, 'Kelola', const OwnerManageStoreScreen()), // Diperbarui
+      _MenuItem(Icons.receipt_long, 'Riwayat Pesanan', OwnerHistoryScreen(placeId: placeId)), // Diperbarui
+      _MenuItem(Icons.money, 'Laporan Keuangan', OwnerBalanceReportScreen()),
     ];
 
     return Scaffold(

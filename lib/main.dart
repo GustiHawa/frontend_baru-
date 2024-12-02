@@ -89,7 +89,7 @@ class RumahNugasApp extends StatelessWidget {
         // Owner routes
         '/ownerHome': (context) => const OwnerHomeScreen(),
         '/ownerManageStore': (context) => const OwnerManageStoreScreen(),
-        '/ownerHistory': (context) => const OwnerHistoryScreen(),
+        '/ownerHistory': (context) => const OwnerHistoryScreen(placeId: 0,),
         '/ownerBalanceReport': (context) => OwnerBalanceReportScreen(),
 
         // Admin routes
