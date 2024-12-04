@@ -16,12 +16,13 @@ class UserHomeScreen extends StatelessWidget {
     );
   }
 
- @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("RUMAH NUGAS"),
         centerTitle: true,
+        automaticallyImplyLeading: false, // This removes the back button
       ),
       endDrawer: Drawer(
         child: ListView(
@@ -83,19 +84,36 @@ class UserHomeScreen extends StatelessWidget {
             Expanded(
               child: ListView(
                 children: [
-                  _buildLocationButton(context, "ITS"),
+                  _buildLocationButton(context, "ITS", 1),
                   const SizedBox(height: 16.0),
-                  _buildLocationButton(context, "UNAIR"),
+                  _buildLocationButton(context, "UNAIR A", 2),
                   const SizedBox(height: 16.0),
-                  _buildLocationButton(context, "UPN"),
+                  _buildLocationButton(context, "UNAIR B", 3),
                   const SizedBox(height: 16.0),
-                  _buildLocationButton(context, "UNESA"),
+                  _buildLocationButton(context, "UNAIR C", 4),
                   const SizedBox(height: 16.0),
-                  _buildLocationButton(context, "UBAYA"),
+                  _buildLocationButton(context, "UNESA", 5),
                   const SizedBox(height: 16.0),
-                  _buildLocationButton(context, "UINSA"),
+                  _buildLocationButton(context, "UBAYA", 6),
                   const SizedBox(height: 16.0),
-                  _buildLocationButton(context, "Universitas Terbuka"),
+                  _buildLocationButton(context, "UINSA", 7),
+                   const SizedBox(height: 16.0),
+                  _buildLocationButton(context, "UPN Veteran Jatim", 8),
+                  const SizedBox(height: 16.0),
+                  _buildLocationButton(context, "Universitas Ciputra", 9),
+                  const SizedBox(height: 16.0),
+                  _buildLocationButton(context, "Universitas Terbuka", 10),
+                  const SizedBox(height: 16.0),
+                  _buildLocationButton(context, "Universitas Dr. Soetomo", 11),
+                  const SizedBox(height: 16.0),
+                  _buildLocationButton(context, "Universitas Wijaya Putra", 12),
+                  const SizedBox(height: 16.0),
+                  _buildLocationButton(context, "Universitas Muhammadiyah Surabaya", 13),
+                  const SizedBox(height: 16.0),
+                  _buildLocationButton(context, "Universitas 17 Agustus 1945 (UNTAG)", 14),
+                  const SizedBox(height: 16.0),
+                  _buildLocationButton(context, "Universitas Wijaya Kusuma Surabaya", 15),
+
                 ],
               ),
             ),
@@ -106,17 +124,17 @@ class UserHomeScreen extends StatelessWidget {
   }
 
   // Fungsi untuk membuat tombol lokasi
-  Widget _buildLocationButton(BuildContext context, String location) {
+  Widget _buildLocationButton(BuildContext context, String location, int campusId) {
     return SizedBox(
       width: double.infinity,
       height: 50.0, // Tinggi seragam untuk semua tombol
       child: ElevatedButton(
         onPressed: () {
-          // Navigasi ke halaman daftar cafe dengan parameter kampus
+          // Navigasi ke halaman daftar cafe dengan parameter campus
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => UserListCafeScreen(kampus: location, warkopTerdekat: [],),
+              builder: (context) => UserListCafeScreen(campus: location, campusId: campusId),
             ),
           );
         },

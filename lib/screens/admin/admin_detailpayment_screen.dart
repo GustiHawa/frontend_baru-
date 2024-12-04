@@ -84,7 +84,7 @@ class _AdminDetailPaymentScreenState extends State<AdminDetailPaymentScreen> {
               height: 200,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: Colors.grey,
+                  color: Colors.black,
                 ),
                 borderRadius: BorderRadius.circular(8),
               ),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AdminVerificationPlaceScreen extends StatefulWidget {
   const AdminVerificationPlaceScreen({super.key});
@@ -8,46 +10,51 @@ class AdminVerificationPlaceScreen extends StatefulWidget {
 }
 
 class _AdminVerificationPlaceScreenState extends State<AdminVerificationPlaceScreen> {
-  // Contoh data kafe yang diinputkan oleh owner
-  List<Map<String, dynamic>> places = [
-    {
-      "id": "1",
-      "name": "Warkop A",
-      "location": "Jl. Anggur, UPN",
-      "status": "Pending",
-      "kampus": "UPN",
-      "nomorRekening": "1234567890",
-    },
-    {
-      "id": "2",
-      "name": "Cafe B",
-      "location": "Jl. Pukis, ITS",
-      "status": "Pending",
-      "kampus": "ITS",
-      "nomorRekening": "0987654321",
-    },
-  ];
+  List<Map<String, dynamic>> places = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPlaces();
+  }
+
+  Future<void> _loadPlaces() async {
+    final response = await http.get(Uri.parse('http://localhost/rumah-nugas-backend-fix/api/get_places.php'));
+    if (response.statusCode == 200) {
+      setState(() {
+        places = List<Map<String, dynamic>>.from(json.decode(response.body));
+      });
+    } else {
+      // Handle error
+    }
+  }
+
+  Future<void> _updatePlaceStatus(String id, String status) async {
+    final response = await http.post(
+      Uri.parse('http://localhost/rumah-nugas-backend-fix/api/update_place_status.php'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'id': id, 'status': status}),
+    );
+    if (response.statusCode == 200) {
+      setState(() {
+        places = places.map((place) {
+          if (place["id"] == id) {
+            place["status"] = status;
+          }
+          return place;
+        }).toList();
+      });
+    } else {
+      // Handle error
+    }
+  }
 
   void _approvePlace(String id) {
-    setState(() {
-      places = places.map((place) {
-        if (place["id"] == id) {
-          place["status"] = "Approved";
-        }
-        return place;
-      }).toList();
-    });
+    _updatePlaceStatus(id, "Approved");
   }
 
   void _rejectPlace(String id) {
-    setState(() {
-      places = places.map((place) {
-        if (place["id"] == id) {
-          place["status"] = "Rejected";
-        }
-        return place;
-      }).toList();
-    });
+    _updatePlaceStatus(id, "Rejected");
   }
 
   @override
@@ -65,7 +72,7 @@ class _AdminVerificationPlaceScreenState extends State<AdminVerificationPlaceScr
             columns: const [
               DataColumn(label: Text('Nama Tempat')),
               DataColumn(label: Text('Alamat')),
-              DataColumn(label: Text('Kampus Terdekat')),
+              DataColumn(label: Text('campus Terdekat')),
               DataColumn(label: Text('Nomor Rekening')),
               DataColumn(label: Text('Status')),
               DataColumn(label: Text('Aksi')),
@@ -74,9 +81,9 @@ class _AdminVerificationPlaceScreenState extends State<AdminVerificationPlaceScr
               return DataRow(
                 cells: [
                   DataCell(Text(place["name"])),
-                  DataCell(Text(place["location"])),
-                  DataCell(Text(place["kampus"])),
-                  DataCell(Text(place["nomorRekening"])),
+                  DataCell(Text(place["address"])),
+                  DataCell(Text(place["campus"])),
+                  DataCell(Text(place["account_number"])),
                   DataCell(Text(place["status"])),
                   DataCell(
                     Row(

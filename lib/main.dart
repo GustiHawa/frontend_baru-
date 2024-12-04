@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-// Import screens;
+// Import screens
 import 'screens/welcome_screen.dart';
 import 'screens/register_screen.dart';
-import 'screens/login_screen.dart'; // Ensure this import is used
+import 'screens/login_screen.dart';
 
 import 'screens/user/user_home_screen.dart';
 import 'screens/user/user_history_screen.dart';
@@ -24,7 +24,7 @@ import 'screens/admin/admin_verificationplace_screen.dart';
 import 'screens/admin/admin_detailpayment_screen.dart';
 import 'screens/admin/admin_detailplace_screen.dart';
 
-// Define the missing variables
+// Define app-wide constants for consistency
 const primaryColor = Colors.blue;
 const backgroundColor = Colors.white;
 const appBarTitleStyle = TextStyle(color: Colors.white, fontSize: 20);
@@ -52,55 +52,91 @@ class RumahNugasApp extends StatelessWidget {
           titleTextStyle: appBarTitleStyle,
         ),
         textTheme: const TextTheme(
-          bodyLarge: bodyTextStyle, // bodyLarge menggantikan bodyText1
-          bodyMedium: subtitleTextStyle, // bodyMedium menggantikan bodyText2
-          titleLarge: headingTextStyle, // titleLarge menggantikan headline6
+          bodyLarge: bodyTextStyle,
+          bodyMedium: subtitleTextStyle,
+          titleLarge: headingTextStyle,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor:
-                buttonColor, // Gunakan backgroundColor sebagai pengganti primary
-            foregroundColor: Colors.white, // Gunakan foregroundColor sebagai pengganti onPrimary
+            backgroundColor: buttonColor,
+            foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             textStyle: buttonTextStyle,
           ),
         ),
       ),
-      initialRoute: '/', // Set initial route to '/'
-      routes: {
-        // Common routes
-        '/': (context) => const WelcomeScreen(), // Ensure this is the correct initial screen
-        '/register': (context) => const RegisterScreen(),
-        '/login': (context) => const LoginScreen(), // Ensure LoginScreen is referenced here
-
-        // User routes
-        '/userHome': (context) => const UserHomeScreen(),
-        '/userHistory': (context) => const UserHistoryScreen(),
-        '/userListcafe': (context) => listcafe.UserListCafeScreen(kampus: '', warkopTerdekat: []),
-        '/userDetailcafe': (context) => detailcafe.UserDetailCafeScreen(
-          name: 'Cafe Example',
-          location: '123 Example St',
-          price: '\$\$',
-          details: 'This is an example cafe.',
-          imageUrl: 'photo', cafeName: '', cafeId: 0, // Ensure a valid int value is passed
-        ),
-        '/userBooking': (context) => booking.UserBookingScreen(cafeName: 'Cafe Example', placeId: 1), // Ensure a valid int value is passed
-
-        // Owner routes
-        '/ownerHome': (context) => const OwnerHomeScreen(),
-        '/ownerManageStore': (context) => const OwnerManageStoreScreen(),
-        '/ownerHistory': (context) => const OwnerHistoryScreen(placeId: 0,),
-        '/ownerBalanceReport': (context) => OwnerBalanceReportScreen(),
-
-        // Admin routes
-        '/adminDashboard': (context) => const AdminDashboardScreen(),
-        '/adminVerification': (context) => const AdminVerificationScreen(),
-        '/adminPlaceManage': (context) => const AdminPlaceManageScreen(),
-        '/adminCommissionReport': (context) => const AdminCommissionreportScreen(),
-        '/adminDetailPayment': (context) => const AdminDetailPaymentScreen(buktiTransfer: ''),
-        '/adminVerificationPlace': (context) => const AdminVerificationPlaceScreen(),
-        '/adminDetailPlace': (context) => const AdminDetailPlaceScreen(),
-      },
+      initialRoute: '/',
+      routes: _defineRoutes(),
     );
   }
+
+  /// Define application routes
+  Map<String, WidgetBuilder> _defineRoutes() {
+    return {
+      // Common routes
+      '/': (context) => const WelcomeScreen(),
+      '/register': (context) => const RegisterScreen(),
+      '/login': (context) => const LoginScreen(),
+
+
+
+
+      // User routes
+      '/userHome': (context) => const UserHomeScreen(),
+      '/userHistory': (context) => const UserHistoryScreen(),
+      '/userListcafe': (context) => listcafe.UserListCafeScreen(
+            campus: ModalRoute.of(context)?.settings.arguments as String? ?? '',
+            campusId: (ModalRoute.of(context)?.settings.arguments
+                as Map<String, dynamic>?)?['campusId'],
+          ),
+      '/userDetailcafe': (context) {
+        final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
+        return detailcafe.UserDetailCafeScreen(
+          name: args['name'] ?? 'Cafe Example',
+          location: args['location'] ?? 'Unknown Location',
+          price: args['price'] ?? '0',
+          details: args['details'] ?? 'No details available.',
+          imageUrl: args['imageUrl'] ?? '',
+          cafeName: args['cafeName'] ?? '',
+          cafeId: args['cafeId'] ?? 0,
+        );
+      },
+      '/userBooking': (context) {
+        final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
+        return booking.UserBookingScreen(
+          cafeName: args['cafeName'] ?? 'Unknown Cafe',
+          placeId: args['placeId'] ?? 0,
+          price: args['price'] ?? '0',
+        );
+      },
+
+      // Owner routes
+      '/ownerHome': (context) => const OwnerHomeScreen(),
+      '/ownerManageStore': (context) => const OwnerManageStoreScreen(),
+      '/ownerHistory': (context) {
+        final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
+        return OwnerHistoryScreen(
+          placeId: args['placeId'] ?? 0,
+        );
+      },
+      '/ownerBalanceReport': (context) => const OwnerBalanceReportScreen(),
+
+      // Admin routes
+      '/adminDashboard': (context) => const AdminDashboardScreen(),
+      '/adminVerification': (context) => const AdminVerificationScreen(),
+      '/adminPlaceManage': (context) => const AdminPlaceManageScreen(),
+      '/adminCommissionReport': (context) => const AdminCommissionreportScreen(),
+      '/adminDetailPayment': (context) {
+        final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
+        return AdminDetailPaymentScreen(
+          buktiTransfer: args['buktiTransfer'] ?? '',
+        );
+      },
+      '/adminVerificationPlace': (context) => const AdminVerificationPlaceScreen(),
+      '/adminDetailPlace': (context) => const AdminDetailPlaceScreen(),
+    };
+  }
 }
+
+
+

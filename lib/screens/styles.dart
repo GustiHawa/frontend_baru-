@@ -40,7 +40,7 @@ BoxDecoration containerBoxDecoration = const BoxDecoration(
   borderRadius: BorderRadius.all(Radius.circular(10)),
   boxShadow: [
     BoxShadow(
-      color: Colors.grey,
+      color: Colors.black,
       blurRadius: 2,
       spreadRadius: 1,
       offset: Offset(0, 2),

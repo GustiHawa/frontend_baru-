@@ -5,6 +5,7 @@ import 'user_booking_screen.dart';
 
 class UserDetailCafeScreen extends StatefulWidget {
   final int cafeId;
+  final String cafeName;
   final String name;
   final String location;
   final String price;
@@ -14,11 +15,12 @@ class UserDetailCafeScreen extends StatefulWidget {
   const UserDetailCafeScreen({
     super.key,
     required this.cafeId,
+    required this.cafeName,
     required this.name,
     required this.location,
     required this.price,
     required this.details,
-    required this.imageUrl, required String cafeName,
+    required this.imageUrl,
   });
 
   @override
@@ -150,8 +152,9 @@ class _UserDetailCafeScreenState extends State<UserDetailCafeScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => UserBookingScreen(
-                                  cafeName: widget.name,
-                                  placeId: widget.cafeId, // Ensure a valid int value is passed
+                                  cafeName: widget.cafeName,
+                                  placeId: widget.cafeId,
+                                  price: int.tryParse(widget.price) ?? 0, // Convert to int
                                 ),
                               ),
                             );
@@ -165,7 +168,7 @@ class _UserDetailCafeScreenState extends State<UserDetailCafeScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            backgroundColor: Colors.black,
+                            backgroundColor: Colors.blue,
                             foregroundColor: Colors.white,
                           ),
                           child: const Text(

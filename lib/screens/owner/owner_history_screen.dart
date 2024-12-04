@@ -1,71 +1,116 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart'; // Mengimpor package intl
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class OwnerHistoryScreen extends StatefulWidget {
-  final int placeId;
-
-  const OwnerHistoryScreen({super.key, required this.placeId});
+  const OwnerHistoryScreen({super.key, required int placeId});
 
   @override
   _OwnerHistoryScreenState createState() => _OwnerHistoryScreenState();
 }
 
+// Kelas Pesanan untuk mendefinisikan pesanan
+class Pesanan {
+  final String name;
+  final DateTime booking_date;
+  final int number_of_people;
+  final double total_price;
+
+  Pesanan({
+    required this.name,
+    required this.booking_date,
+    required this.number_of_people,
+    required this.total_price,
+  });
+
+  // Konversi dari JSON
+  factory Pesanan.fromJson(Map<String, dynamic> json) {
+    try {
+      final String name = json['nama_customer']?.toString() ?? 'Unknown';
+      final DateTime bookingDate = DateTime.tryParse(json['tanggal']?.toString() ?? '') ?? DateTime.now();
+      final int numberOfPeople = int.tryParse(json['jumlah_kursi']?.toString() ?? '0') ?? 0;
+      final double totalPrice = double.tryParse(json['harga']?.toString() ?? '0.0') ?? 0.0;
+
+      return Pesanan(
+        name: name,
+        booking_date: bookingDate,
+        number_of_people: numberOfPeople,
+        total_price: totalPrice,
+      );
+    } catch (e) {
+      print('Error parsing Pesanan: $e');
+      rethrow; // Rethrow error to be caught in the catch block
+    }
+  }
+}
+
 class _OwnerHistoryScreenState extends State<OwnerHistoryScreen> {
-  List<Map<String, dynamic>> bookings = [];
+  List<Pesanan> listPesanan = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchBookings();
+    _fetchHistory();
   }
 
-  Future<void> _fetchBookings() async {
-    final response = await http.get(Uri.parse('http://localhost/rumah-nugas-backend-fix/api/bookings.php?place_id=${widget.placeId}'));
+Future<void> _fetchHistory() async {
+  try {
+    final response = await http.get(Uri.parse('http://localhost/rumah-nugas-backend-fix/api/history.php'));
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body)['records'];
+      print('Response body: ${response.body}'); // Debugging response body
+      final List<dynamic> data = json.decode(response.body);
       setState(() {
-        bookings = data.map((booking) {
-          return {
-            'userName': booking['user_name'],
-            'date': booking['booking_date'],
-            'numberOfPeople': booking['number_of_people'].toString(),
-            'price': booking['total_price'].toString(),
-            'status': booking['status'],
-            'paymentProof': booking['payment_proof'],
-          };
-        }).toList();
+        listPesanan = data.map((item) => Pesanan.fromJson(item)).toList();
       });
     } else {
-      throw Exception('Failed to load bookings');
+      print('Server responded with status code: ${response.statusCode}');
+      throw Exception('Failed to load history');
     }
+  } catch (e) {
+    print('Error: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: $e')),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
+    var dateFormat = DateFormat('dd MMMM yyyy'); // Format tanggal: 18 November 2024
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Riwayat Pesanan'),
       ),
-      body: bookings.isEmpty
+      body: listPesanan.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
-              itemCount: bookings.length,
+              itemCount: listPesanan.length,
               itemBuilder: (context, index) {
-                final booking = bookings[index];
+                final pesanan = listPesanan[index];
+
                 return Card(
                   margin: const EdgeInsets.all(10),
-                  child: ListTile(
-                    title: Text('Nama Customer: ${booking['userName']}'),
-                    subtitle: Column(
+                  elevation: 5,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Tanggal: ${booking['date']}'),
-                        Text('Jumlah Orang: ${booking['numberOfPeople']}'),
-                        Text('Harga: Rp ${booking['price']}'),
-                        Text('Status: ${booking['status']}'),
-                        Text('Bukti Pembayaran: ${booking['paymentProof']}'),
+                        Text(
+                          'Nama Customer: ${pesanan.name}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 5),
+                        Text('Tanggal: ${dateFormat.format(pesanan.booking_date)}'),
+                        Text('Jumlah Kursi: ${pesanan.number_of_people}'),
+                        Text('Harga: Rp. ${pesanan.total_price.toStringAsFixed(2)}'),
+                        const Divider(),
                       ],
                     ),
                   ),
@@ -74,4 +119,10 @@ class _OwnerHistoryScreenState extends State<OwnerHistoryScreen> {
             ),
     );
   }
+}
+
+void main() {
+  runApp(MaterialApp(
+    home: OwnerHistoryScreen(placeId: 0,),
+  ));
 }

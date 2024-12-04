@@ -16,9 +16,11 @@ dependencies:
   intl: ^0.18.0
   shared_preferences: ^2.1.0
   image_picker: ^0.8.7+3
+  logger: ^2.5.0
 
   # Menambahkan dependensi cupertino_icons
   cupertino_icons: ^1.0.8
+  flutter_image_compress: ^2.3.0
 
 dev_dependencies:
   flutter_test:

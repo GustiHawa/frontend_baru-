@@ -99,7 +99,7 @@ class _AdminDetailPlaceScreenState extends State<AdminDetailPlaceScreen> {
             Container(
               height: 200,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
+                border: Border.all(color: Colors.black),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: mainPhoto != null
