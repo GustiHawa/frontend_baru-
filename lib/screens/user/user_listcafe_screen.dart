@@ -26,38 +26,37 @@ class _UserListCafeScreenState extends State<UserListCafeScreen> {
 
   Future<void> _fetchCafes() async {
     try {
-      final response = await http.get(Uri.parse('http://localhost/rumah-nugas-backend-fix/api/places.php?campus_id=${widget.campusId}'));
+      final response = await http.get(
+        Uri.parse(
+            'http://localhost/rumah-nugas-backend-fix/api/places.php?campus_id=${widget.campusId}'),
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-        if (data['records'] != null) {
+        if (data['records'] != null && data['records'] is List) {
           setState(() {
             warkopTerdekat = List<Map<String, dynamic>>.from(data['records']);
             _isLoading = false;
           });
         } else {
           setState(() {
-            warkopTerdekat = [];
+            _errorMessage = 'Data kosong atau tidak valid.';
             _isLoading = false;
           });
         }
       } else {
         setState(() {
-          _errorMessage = 'Failed to load cafes: ${response.statusCode}';
+          _errorMessage = 'Gagal memuat data: ${response.statusCode}';
           _isLoading = false;
         });
-        print('Failed to load cafes: ${response.statusCode}');
         print('Response body: ${response.body}');
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error: $e';
+        _errorMessage = 'Terjadi kesalahan: $e';
         _isLoading = false;
       });
-      print('Error: $e'); // Log the error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      print('Error: $e');
     }
   }
 
@@ -68,92 +67,116 @@ class _UserListCafeScreenState extends State<UserListCafeScreen> {
         title: Text('Daftar Cafe di ${widget.campus}'),
         centerTitle: true,
       ),
-      drawer: _buildDrawer(context), // Add the drawer here
+      drawer: _buildDrawer(context),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
-              ? Center(child: Text(_errorMessage!))
-              : ListView.builder(
-                  itemCount: warkopTerdekat.length,
-                  itemBuilder: (context, index) {
-                    final cafe = warkopTerdekat[index];
-                    return GestureDetector(
-                      onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => UserDetailCafeScreen(
-                          cafeId: cafe['id'],
-                          cafeName: cafe['name'],
-                          name: cafe['name'],
-                          location: cafe['address'],
-                          price: cafe['price'].toString(), // Pastikan harga adalah string
-                          details: cafe['facilities'],
-                          imageUrl: cafe['photo'],
-                        ),
+              ? Center(
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              : warkopTerdekat.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'Tidak ada cafe tersedia untuk kampus ini.',
+                        style: TextStyle(fontSize: 16),
                       ),
-                    );
-
-                      },
-                      child: Card(
-                        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: cafe['photo'] != null && cafe['photo'].isNotEmpty
-                                    ? Image.network(
-                                        cafe['photo'],
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return const Center(child: Text('Gambar tidak tersedia'));
-                                        },
-                                      )
-                                    : const Center(child: Text('Gambar tidak tersedia')),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      cafe['name'] ?? 'Nama tidak tersedia',
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Text(
-                                      'Harga: Rp ${cafe['price'] ?? '0'}',
-                                      style: const TextStyle(color: Colors.grey),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Text(
-                                      'Alamat: ${cafe['address'] ?? 'Alamat tidak tersedia'}',
-                                      style: const TextStyle(color: Colors.grey),
-                                    ),
-                                  ],
+                    )
+                  : ListView.builder(
+                      itemCount: warkopTerdekat.length,
+                      itemBuilder: (context, index) {
+                        final cafe = warkopTerdekat[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => UserDetailCafeScreen(
+                                  cafeId: cafe['id'],
+                                  cafeName: cafe['name'] ?? 'Nama tidak tersedia',
+                                  name: cafe['name'] ?? 'Nama tidak tersedia',
+                                  location: cafe['address'] ?? 'Alamat tidak tersedia',
+                                  price: (cafe['price'] ?? '0').toString(),
+                                  details: cafe['facilities'] ?? 'Tidak ada fasilitas',
+                                  imageUrl: cafe['photo'] ?? '',
                                 ),
                               ),
-                            ],
+                            );
+                          },
+                          child: Card(
+                            margin: const EdgeInsets.symmetric(
+                              vertical: 10,
+                              horizontal: 15,
+                            ),
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 100,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: cafe['photo'] != null && cafe['photo'].isNotEmpty
+                                        ? ClipRRect(
+                                            borderRadius: BorderRadius.circular(10),
+                                            child: Image.network(
+                                              cafe['photo'],
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                return const Center(
+                                                  child: Text('Gambar tidak tersedia'),
+                                                );
+                                              },
+                                            ),
+                                          )
+                                        : const Center(
+                                            child: Text('Gambar tidak tersedia'),
+                                          ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          cafe['name'] ?? 'Nama tidak tersedia',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
+                                        const SizedBox(height: 5),
+                                        Text(
+                                          'Harga: Rp ${cafe['price'] ?? '0'}',
+                                          style: const TextStyle(color: Colors.grey),
+                                        ),
+                                        const SizedBox(height: 5),
+                                        Text(
+                                          'Alamat: ${cafe['address'] ?? 'Alamat tidak tersedia'}',
+                                          style: const TextStyle(color: Colors.grey),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                        );
+                      },
+                    ),
     );
   }
 
@@ -192,7 +215,6 @@ class _UserListCafeScreenState extends State<UserListCafeScreen> {
             leading: const Icon(Icons.logout),
             title: const Text('Logout'),
             onTap: () {
-              // Implement logout functionality
               Navigator.pushReplacementNamed(context, '/login');
             },
           ),

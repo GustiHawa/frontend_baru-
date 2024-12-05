@@ -19,56 +19,86 @@ class _AdminVerificationScreenState extends State<AdminVerificationScreen> {
   }
 
   Future<void> _fetchBookings() async {
-    final response = await http.get(Uri.parse('http://localhost/rumah-nugas-backend-fix/api/bookings.php'));
-
-    String responseBody = response.body;
-
-    // Attempt to remove HTML tags (this is a very basic example and may not handle all cases)
-    String cleanedResponseBody = responseBody.replaceAll(RegExp(r'<[^>]*>|&nbsp;'), ''); // Remove tags and &nbsp;
-
     try {
-      Map<String, dynamic> decodedJson = jsonDecode(cleanedResponseBody);
-      final List<dynamic> data = decodedJson['records'];
-      setState(() {
-        bookings = data.map((booking) {
-          return {
-            'id': booking['id'],
-            'userId': booking['user_id'],
-            'date': booking['booking_date'],
-            'numberOfPeople': booking['number_of_people'].toString(),
-            'price': booking['total_price'].toString(),
-            'status': booking['status'],
-            'paymentProof': booking['payment_proof'],
-          };
-        }).toList();
-      });
-    } on FormatException catch (e) {
-      // Handle the error gracefully, perhaps display an error message to the user.
-      print('Error decoding JSON: $e');
-      print('Original Response: $responseBody'); // Helpful for debugging
-      print('Cleaned Response: $cleanedResponseBody');
+      final response = await http.get(Uri.parse('http://localhost/rumah-nugas-backend-fix/api/bookings.php'));
+
+      if (response.statusCode == 200) {
+        String responseBody = response.body;
+
+        // Extract the JSON part from the response
+        final jsonStartIndex = responseBody.indexOf('{');
+        final jsonEndIndex = responseBody.lastIndexOf('}') + 1;
+
+        if (jsonStartIndex == -1 || jsonEndIndex == -1) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Gagal mengambil data booking')),
+          );
+          return;
+        }
+
+        final jsonString = responseBody.substring(jsonStartIndex, jsonEndIndex);
+
+        try {
+          Map<String, dynamic> decodedJson = jsonDecode(jsonString);
+          final List<dynamic> data = decodedJson['records'];
+          setState(() {
+            bookings = data.map((booking) {
+              return {
+                'id': booking['id'],
+                'userId': booking['user_id'],
+                'date': booking['booking_date'],
+                'numberOfPeople': booking['number_of_people'].toString(),
+                'price': booking['total_price'].toString(),
+                'status': booking['status'] ?? '', // Pastikan tipe data sesuai
+                'paymentProof': booking['payment_proof'] ?? '', // Pastikan tipe data sesuai
+              };
+            }).toList();
+          });
+        } on FormatException catch (e) {
+          // Handle the error gracefully, perhaps display an error message to the user.
+          print('Error decoding JSON: $e');
+          print('Original Response: $responseBody'); // Helpful for debugging
+          print('Extracted JSON: $jsonString');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Gagal mengambil data booking')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Terjadi kesalahan pada server')),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal mengambil data booking')),
+        const SnackBar(content: Text('Gagal memuat data booking')),
       );
+      print('Error fetching bookings: $e');
     }
   }
 
   Future<void> _updateBookingStatus(int bookingId, String status) async {
-    final response = await http.post(
-      Uri.parse('http://localhost/rumah-nugas-backend-fix/api/update_booking_status.php'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({'id': bookingId, 'status': status}),
-    );
-
-    if (response.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Booking $status')),
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost/rumah-nugas-backend-fix/api/update_booking_status.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'id': bookingId, 'status': status}),
       );
-      _fetchBookings(); // Refresh bookings after update
-    } else {
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Booking $status')),
+        );
+        _fetchBookings(); // Refresh bookings after update
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal memperbarui status booking')),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Gagal memperbarui status booking')),
       );
+      print('Error updating booking status: $e');
     }
   }
 
